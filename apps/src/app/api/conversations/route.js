@@ -2,36 +2,41 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 
-/**
- * GET /api/conversations
- * Returns all conversations for the current user, with:
- * - participants (user + profile)
- * - last message (1 newest)
- * Ordered by most recently updated.
- */
 export async function GET() {
-	try {
-		const { userId: me } = await requireUser();
+	const { userId: me } = await requireUser();
 
-		const conversations = await prisma.conversation.findMany({
-			where: { participants: { some: { userId: me } } },
-			include: {
-				participants: {
-					include: {
-						user: { include: { profile: true } },
-					},
-				},
-				messages: {
-					take: 1,
-					orderBy: { createdAt: "desc" },
-				},
+	const convos = await prisma.conversation.findMany({
+		where: { participants: { some: { userId: me } } },
+		include: {
+			participants: {
+				include: { user: { include: { profile: true } } },
 			},
-			orderBy: { updatedAt: "desc" },
-		});
+			messages: { take: 1, orderBy: { createdAt: "desc" } },
+		},
+		orderBy: { updatedAt: "desc" },
+	});
 
-		return NextResponse.json(conversations);
-	} catch (err) {
-		console.error("GET /api/conversations failed:", err);
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
+	// normalize for the client
+	const data = convos.map((c) => {
+		const last = c.messages[0] || null;
+		const others = c.participants.map((p) => p.user).filter((u) => u.id !== me);
+		const other = others[0]; // 1:1 chat for now
+		return {
+			id: c.id,
+			other: other
+				? {
+						id: other.id,
+						name: other.profile?.displayName || other.name || other.email,
+						email: other.email,
+						avatar: other.profile?.avatarUrl || null,
+					}
+				: null,
+			lastMessage: last
+				? { content: last.content, createdAt: last.createdAt }
+				: null,
+			updatedAt: c.updatedAt,
+		};
+	});
+
+	return NextResponse.json(data);
 }

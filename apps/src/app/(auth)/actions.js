@@ -40,11 +40,11 @@ export async function register(prevState, formData) {
 				profile: { create: { displayName: name } },
 			},
 		});
-		redirect("/login"); // success → go to login
 	} catch (e) {
 		console.error(e);
 		return { errors: { _form: ["Something went wrong. Please try again."] } };
 	}
+	redirect("/login");
 }
 
 export async function login(prevState, formData) {

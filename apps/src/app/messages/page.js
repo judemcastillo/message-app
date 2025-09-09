@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth-helpers";
 
-import MessagesIndex from "@/components/Messages";
+import MessagesIndex from "@/components/Conversations";
 
 export default async function MessagesPage() {
 	await requireUser();
