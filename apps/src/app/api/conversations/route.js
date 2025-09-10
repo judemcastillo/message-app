@@ -9,20 +9,74 @@ export async function GET() {
 		where: { participants: { some: { userId: me } } },
 		include: {
 			participants: {
-				include: { user: { include: { profile: true } } },
+				include: {
+					user: {
+						select: {
+							id: true,
+							email: true,
+							name: true,
+							profile: { select: { displayName: true, avatarUrl: true } },
+						},
+					},
+				},
 			},
-			messages: { take: 1, orderBy: { createdAt: "desc" } },
+			messages: {
+				take: 1,
+				orderBy: { createdAt: "desc" },
+				select: { content: true, imageUrl: true, createdAt: true },
+			},
 		},
 		orderBy: { updatedAt: "desc" },
 	});
 
-	// normalize for the client
 	const data = convos.map((c) => {
 		const last = c.messages[0] || null;
-		const others = c.participants.map((p) => p.user).filter((u) => u.id !== me);
-		const other = others[0]; // 1:1 chat for now
+
+		if (c.isGroup) {
+			// Members (with me included)
+			const members = c.participants.map((p) => ({
+				id: p.user.id,
+				name: p.user.profile?.displayName || p.user.name || p.user.email,
+				avatar: p.user.profile?.avatarUrl || null,
+			}));
+			const memberIds = members.map((m) => m.id);
+			const others = members.filter((m) => m.id !== me);
+
+			// Fallback title like: "Alice, Bob +2"
+			const fallbackTitle = (() => {
+				if (others.length === 0) return "Group";
+				const names = others.map((o) => o.name);
+				return names.length <= 2
+					? names.join(", ")
+					: `${names[0]}, ${names[1]} +${names.length - 2}`;
+			})();
+
+			return {
+				id: c.id,
+				isGroup: true,
+				title: c.title || fallbackTitle,
+				groupAvatar: c.avatarUrl || null,
+				memberIds,
+				// If you want to render small member pills you can expose a few:
+				members: others.slice(0, 3),
+				lastMessage: last
+					? {
+							content: last.content,
+							imageUrl: last.imageUrl || null,
+							createdAt: last.createdAt,
+						}
+					: null,
+				updatedAt: c.updatedAt,
+			};
+		}
+
+		// 1:1
+		const otherPart = c.participants.find((p) => p.user.id !== me);
+		const other = otherPart?.user || null;
+
 		return {
 			id: c.id,
+			isGroup: false,
 			other: other
 				? {
 						id: other.id,
@@ -32,7 +86,11 @@ export async function GET() {
 					}
 				: null,
 			lastMessage: last
-				? { content: last.content, createdAt: last.createdAt }
+				? {
+						content: last.content,
+						imageUrl: last.imageUrl || null,
+						createdAt: last.createdAt,
+					}
 				: null,
 			updatedAt: c.updatedAt,
 		};

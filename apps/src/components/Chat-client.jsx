@@ -78,7 +78,7 @@ export default function ChatClient({ conversationId, meId }) {
 	}
 
 	return (
-		<div className="flex flex-col h-[80vh] border-none rounded-b-xl bg-white">
+		<div className="flex flex-col h-[70vh] border-none rounded-b-xl bg-white justify-between">
 			<div className="flex-1 overflow-y-auto p-3 space-y-2">
 				{isLoading ? (
 					<div className="text-sm text-muted-foreground">Loading…</div>

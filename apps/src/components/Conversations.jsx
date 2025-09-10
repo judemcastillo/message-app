@@ -2,10 +2,9 @@
 
 import useSWR from "swr";
 import Link from "next/link";
+import OnlineAvatar from "./online-avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "./ui/button";
-import OnlineAvatar from "@/components/online-avatar"; // ensure path matches your file
-import { usePresence } from "@/app/hooks/usePresence";
 
 const fetcher = (u) => fetch(u).then((r) => r.json());
 
@@ -16,44 +15,41 @@ function when(ts) {
 }
 
 export default function Conversations() {
-	// Expect: [{ id, other: { id, name, profile? }, lastMessage?, updatedAt }]
 	const { data = [], isLoading } = useSWR("/api/conversations", fetcher, {
 		refreshInterval: 5000,
 	});
 
-	// gather the "other" user ids for presence lookup
-	const otherIds = Array.from(
-		new Set(data.map((c) => c?.other?.id).filter(Boolean))
-	);
-
-	const { online: onlineMap } = usePresence(otherIds); // { [userId]: boolean }
-
-	if (isLoading)
+	if (isLoading) {
 		return <p className="text-sm text-muted-foreground">Loading…</p>;
-
-	if (!data.length)
+	}
+	if (!data.length) {
 		return (
 			<Card className="p-4 text-sm text-muted-foreground">
 				No conversations yet. Start one from{" "}
-				<div className="mt-2 flex items-center gap-3">
+				<div className="flex flex-row gap-3 items-center">
 					<Button asChild>
 						<Link href="/discover">Discover</Link>
 					</Button>
-					<span>/</span>
-					<Button variant="outline" asChild>
+					/
+					<Button asChild variant="outline">
 						<Link href="/messages/new">New chat</Link>
 					</Button>
 				</div>
 			</Card>
 		);
+	}
 
 	return (
-		<ul className="w-full divide-y">
+		<ul className="divide-y w-full">
 			{data.map((c) => {
-				const title =
-					c?.other?.profile?.displayName || c?.other?.name || "Conversation";
-				const otherId = c?.other?.id;
-				const isOnline = !!onlineMap?.[otherId];
+				const isGroup = !!c.isGroup;
+				const title = isGroup
+					? c.title || "Group"
+					: c.other?.name || "Conversation";
+
+				const avatarSrc = isGroup ? c.groupAvatar : c.other?.avatar;
+				// if you have presence, compute online map and pass a boolean here:
+				const onlineBool = false;
 
 				return (
 					<li key={c.id}>
@@ -62,21 +58,22 @@ export default function Conversations() {
 							className="flex items-center gap-3 p-3 hover:bg-muted/40"
 						>
 							<OnlineAvatar
-								src={c?.other?.profile?.avatarUrl}
+								src={avatarSrc || undefined}
 								name={title}
-								online={isOnline}
+								online={onlineBool}
 								size="h-10 w-10"
 							/>
-
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center justify-between gap-2">
-									<p className="truncate font-medium">{title}</p>
-									<span className="shrink-0 text-xs text-muted-foreground">
+									<p className="font-medium truncate">{title}</p>
+									<span className="text-xs text-muted-foreground shrink-0">
 										{when(c.lastMessage?.createdAt ?? c.updatedAt)}
 									</span>
 								</div>
-								<p className="truncate text-sm text-muted-foreground">
-									{c.lastMessage?.content ?? "No messages yet"}
+								<p className="text-sm text-muted-foreground truncate">
+									{c.lastMessage?.imageUrl
+										? "📷 Photo"
+										: (c.lastMessage?.content ?? "No messages yet")}
 								</p>
 							</div>
 						</Link>
