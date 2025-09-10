@@ -2,9 +2,10 @@
 
 import useSWR from "swr";
 import { useActionState, useEffect, useRef } from "react";
-import { sendMessage } from "@/app/messages/[id]/actions";
+import { sendMessage } from "@/app/(authed)/messages/[id]/actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import UploadImageButton from "./UploadImageButton";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
 
@@ -103,6 +104,16 @@ export default function ChatClient({ conversationId, meId }) {
 									}`}
 								>
 									{m.content}
+									{m.imageUrl && (
+										<a href={m.imageUrl} target="_blank" rel="noreferrer">
+											<img
+												src={m.imageUrl}
+												alt="upload"
+												className="mt-2 max-h-64 w-auto rounded-lg"
+												loading="lazy"
+											/>
+										</a>
+									)}
 								</div>
 							</div>
 						</div>
@@ -116,19 +127,25 @@ export default function ChatClient({ conversationId, meId }) {
 					{state.errors._form[0]}
 				</div>
 			) : null}
-
-			<form ref={formRef} action={act} className="p-3 flex gap-2 border-t">
-				<Input
-					ref={inputRef}
-					name="content"
-					placeholder="Type a message…"
-					autoComplete="off"
-					onKeyDown={onKeyDown}
+			<div className="p-3 flex gap-2 border-t flex-row w-full justify-between pt-7 items-center">
+				<UploadImageButton
+					conversationId={conversationId}
+					onUploaded={() => mutate()}
 				/>
-				<Button type="submit" disabled={pending}>
-					{pending ? "Sending…" : "Send"}
-				</Button>
-			</form>
+
+				<form ref={formRef} action={act} className="flex gap-2 w-full flex-2">
+					<Input
+						ref={inputRef}
+						name="content"
+						placeholder="Type a message…"
+						autoComplete="off"
+						onKeyDown={onKeyDown}
+					/>
+					<Button type="submit" disabled={pending}>
+						{pending ? "Sending…" : "Send"}
+					</Button>
+				</form>
+			</div>
 		</div>
 	);
 }

@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AddFriendButton from "@/components/AddFriendButton";
+import OnlineAvatar from "./online-avatar";
+import { usePresence } from "@/app/hooks/usePresence";
 
 export default function UserCard({ user, status }) {
 	const name =
@@ -9,15 +13,18 @@ export default function UserCard({ user, status }) {
 	const bio = user.profile?.bio || "—";
 	const avatar = user.profile?.avatarUrl;
 
+	// Presence: ask for this one user's status
+	const { online } = usePresence([user.id]);
+	const isOnline = !!online[user.id];
 	return (
-		<Card className="flex flex-col p-5 aspect-3/3">
+		<Card className="flex flex-col p-5 ">
 			<CardHeader className="flex-col items-center gap-3 justify-center flex">
-				<Avatar className=" border-none size-12">
-					<AvatarImage src={avatar || undefined} alt={name} />
-					<AvatarFallback className="bg-gray-300">
-						{name.slice(0, 2).toUpperCase()}
-					</AvatarFallback>
-				</Avatar>
+				<OnlineAvatar
+					src={avatar}
+					name={name}
+					online={isOnline}
+					size="h-12 w-12"
+				/>
 				<div className="min-w-0 text-center">
 					<Link
 						href={`/u/${user.id}`}

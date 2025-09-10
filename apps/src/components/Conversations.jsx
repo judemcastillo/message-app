@@ -2,9 +2,10 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "./ui/button";
+import OnlineAvatar from "@/components/online-avatar"; // ensure path matches your file
+import { usePresence } from "@/app/hooks/usePresence";
 
 const fetcher = (u) => fetch(u).then((r) => r.json());
 
@@ -15,22 +16,31 @@ function when(ts) {
 }
 
 export default function Conversations() {
+	// Expect: [{ id, other: { id, name, profile? }, lastMessage?, updatedAt }]
 	const { data = [], isLoading } = useSWR("/api/conversations", fetcher, {
 		refreshInterval: 5000,
 	});
 
+	// gather the "other" user ids for presence lookup
+	const otherIds = Array.from(
+		new Set(data.map((c) => c?.other?.id).filter(Boolean))
+	);
+
+	const { online: onlineMap } = usePresence(otherIds); // { [userId]: boolean }
+
 	if (isLoading)
 		return <p className="text-sm text-muted-foreground">Loading…</p>;
+
 	if (!data.length)
 		return (
 			<Card className="p-4 text-sm text-muted-foreground">
 				No conversations yet. Start one from{" "}
-				<div className="flex flex-row gap-3 items-center">
-					<Button>
+				<div className="mt-2 flex items-center gap-3">
+					<Button asChild>
 						<Link href="/discover">Discover</Link>
-					</Button>{" "}
-					/{" "}
-					<Button variant="outline">
+					</Button>
+					<span>/</span>
+					<Button variant="outline" asChild>
 						<Link href="/messages/new">New chat</Link>
 					</Button>
 				</div>
@@ -38,29 +48,34 @@ export default function Conversations() {
 		);
 
 	return (
-		<ul className="divide-y w-full">
+		<ul className="w-full divide-y">
 			{data.map((c) => {
-				const title = c.other?.name ?? "Conversation";
-				const initials = title.slice(0, 2).toUpperCase();
+				const title =
+					c?.other?.profile?.displayName || c?.other?.name || "Conversation";
+				const otherId = c?.other?.id;
+				const isOnline = !!onlineMap?.[otherId];
+
 				return (
 					<li key={c.id}>
 						<Link
 							href={`/messages/${c.id}`}
 							className="flex items-center gap-3 p-3 hover:bg-muted/40"
 						>
-							<Avatar className="h-9 w-9">
-								<AvatarImage src={c.other?.avatar || undefined} alt={title} />
-								<AvatarFallback>{initials}</AvatarFallback>
-							</Avatar>
+							<OnlineAvatar
+								src={c?.other?.profile?.avatarUrl}
+								name={title}
+								online={isOnline}
+								size="h-10 w-10"
+							/>
 
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center justify-between gap-2">
-									<p className="font-medium truncate">{title}</p>
-									<span className="text-xs text-muted-foreground shrink-0">
+									<p className="truncate font-medium">{title}</p>
+									<span className="shrink-0 text-xs text-muted-foreground">
 										{when(c.lastMessage?.createdAt ?? c.updatedAt)}
 									</span>
 								</div>
-								<p className="text-sm text-muted-foreground truncate">
+								<p className="truncate text-sm text-muted-foreground">
 									{c.lastMessage?.content ?? "No messages yet"}
 								</p>
 							</div>

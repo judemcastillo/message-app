@@ -2,7 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { startConversation } from "@/app/messages/new/actions";
+import { startConversation } from "@/app/(authed)/messages/new/actions";
 
 function Submit({ label }) {
 	const { pending } = useFormStatus();

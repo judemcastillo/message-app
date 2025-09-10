@@ -11,10 +11,10 @@ export default async function RootLayout({ children }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body
-				className="min-h-screen bg-background text-foreground antialiased"
+				className="bg-gray-100 max-h-screen  text-foreground antialiased h-full flex flex-col"
 				suppressHydrationWarning
 			>
-				<header className="border-none max-w-screen w-full bg-white shadow-lg">
+				<header className="border-none max-w-screen w-full bg-white shadow-lg h-[7vh]">
 					<nav className="max-w-5xl mx-auto p-3 flex items-center gap-4 ">
 						<Link href="/">Home</Link>
 						{isAuthed ? (
@@ -33,7 +33,7 @@ export default async function RootLayout({ children }) {
 						)}
 					</nav>
 				</header>
-				<div className="bg-gray-100 min-h-screen">{children}</div>
+				<div className="h-[92vh]">{children}</div>
 			</body>
 		</html>
 	);

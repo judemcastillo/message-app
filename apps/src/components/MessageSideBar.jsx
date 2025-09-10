@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 
 export function MessageSidebar() {
 	return (
-		<div className="bg-white mt-1 rounded-tr-lg min-h-screen  flex flex-col">
+		<div className="bg-white mt-1 rounded-tr-lg h-full flex flex-col grow-2">
 			<div className="flex-row justify-between flex items-center p-3">
 				<div className=" text-2xl font-bold">Messages</div>
 				<Link href="/messages/new">

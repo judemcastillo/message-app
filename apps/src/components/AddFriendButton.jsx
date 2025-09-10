@@ -2,7 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { requestFriend, acceptFriendFrom } from "@/app/discover/actions";
+import { requestFriend, acceptFriendFrom } from "@/app/(authed)/discover/actions";
 
 function Submit({ label }) {
 	const { pending } = useFormStatus();

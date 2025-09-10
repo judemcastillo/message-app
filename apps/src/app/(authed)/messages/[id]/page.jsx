@@ -34,7 +34,7 @@ export default async function ThreadPage({ params: paramsPromise }) {
 		other?.profile?.displayName || other?.name || other?.email || "Chat";
 
 	return (
-		<Card className="p-5 mt-4 mx-3  mb-5">
+		<Card className="p-5 mt-4 mx-3 h-[90vh]">
 			<div className="max-w-screen w-[100%]  space-y-3 ">
 				<div className="flex items-center justify-between border-b-gray-200 border-b-2 pb-5">
 					<h1 className="text-xl font-semibold">{title}</h1>
