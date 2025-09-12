@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/auth-helpers";
 
 // Small helper
 async function meOrThrow() {
@@ -143,31 +144,38 @@ export async function addMembersAction(conversationId, memberIds = []) {
 /**
  * Remove a member (owner/admin). Cannot remove owner.
  */
-export async function removeMemberAction(conversationId, userId) {
-	const me = await meOrThrow();
-	const mePart = await prisma.conversationParticipant.findFirst({
-		where: { conversationId, userId: me },
-		select: { role: true, conversation: { select: { isGroup: true } } },
-	});
-	if (!mePart || !mePart.conversation.isGroup)
-		throw new Error("Not in this group");
-	if (mePart.role === "MEMBER") throw new Error("Only owner/admin can remove");
+export async function removeMemberAction(conversationId, memberId) {
+	const { userId: me } = await requireUser();
 
-	const target = await prisma.conversationParticipant.findFirst({
-		where: { conversationId, userId },
-		select: { role: true },
+	// Load group + current participants
+	const convo = await prisma.conversation.findUnique({
+		where: { id: conversationId },
+		include: { participants: { select: { userId: true } } },
 	});
-	if (!target) return { ok: true };
-	if (target.role === "OWNER") throw new Error("Cannot remove the owner");
+
+	if (!convo || !convo.isGroup)
+		throw new Error("Conversation not found or not a group.");
+	// Only participants can manage members (tighten if you add roles/owner later)
+	if (!convo.participants.some((p) => p.userId === me))
+		throw new Error("Forbidden");
+	// Don’t allow kicking yourself via this action (use Leave instead)
+	if (memberId === me) throw new Error("Use Leave group to remove yourself.");
+
+	// If the target is not a participant, no-op
+	const isMember = convo.participants.some((p) => p.userId === memberId);
+	if (!isMember) return { ok: true, removed: false };
 
 	await prisma.conversationParticipant.deleteMany({
-		where: { conversationId, userId },
+		where: { conversationId, userId: memberId },
 	});
 
-	revalidatePath(`/messages/${conversationId}`);
-	return { ok: true };
-}
+	// Optionally ensure at least 2 members remain; otherwise you could also archive the convo
+	// const remaining = await prisma.conversationParticipant.count({ where: { conversationId } });
+	// if (remaining < 2) { ... }
 
+	revalidatePath(`/messages/${conversationId}`);
+	return { ok: true, removed: true };
+}
 /**
  * Leave group (anyone). If owner leaves, promote an admin/member to OWNER (simple strategy).
  */

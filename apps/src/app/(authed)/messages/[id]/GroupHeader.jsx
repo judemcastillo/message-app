@@ -11,12 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTransition } from "react";
 import AddMembersButton from "@/components/AddMembersButton";
+import ViewMembersButton from "@/components/ViewMembersButton";
+
 
 export default function GroupHeader({ conversationId, title, members }) {
 	const [name, setName] = useState(title || "");
 	const [isPending, startTransition] = useTransition();
 
 	const memberIds = members?.map((m) => m.id) ?? [];
+	const canKick = true; // or compute from roles when you add them
 
 	return (
 		<div className="flex items-center gap-2 border-b p-3">
@@ -35,11 +38,14 @@ export default function GroupHeader({ conversationId, title, members }) {
 				Rename
 			</Button>
 
-			{/* 👇 Add members */}
 			<AddMembersButton
 				conversationId={conversationId}
 				existingMemberIds={memberIds}
-				className="ml-2"
+			/>
+			<ViewMembersButton
+				conversationId={conversationId}
+				members={members}
+				canKick={canKick}
 			/>
 
 			<div className="ml-auto">
