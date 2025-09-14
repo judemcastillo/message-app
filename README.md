@@ -1,4 +1,4 @@
-# Messaging App
+# Message App
 
 A full-stack, real-time-feeling messaging app where **only friends can chat**. Built with **Next.js 15 (App Router)**, **Prisma + PostgreSQL (Neon in production)**, **Supabase Storage** for image uploads, **Tailwind CSS + shadcn/ui**, and **pure JavaScript** (no TypeScript).
 
